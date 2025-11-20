@@ -1,0 +1,142 @@
+﻿<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Parcial III - Cliente Mínimo</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .hidden { display:none; }
+    .room { margin: 8px 0; }
+  </style>
+</head>
+<body>
+  <h2>Login</h2>
+  <div id="loginDiv">
+    <input id="username" placeholder="username" />
+    <input id="password" type="password" placeholder="password" />
+    <button id="loginBtn">Login</button>
+    <button id="registerBtn">Register</button>
+    <div id="loginMsg"></div>
+  </div>
+
+  <div id="mainDiv" class="hidden">
+    <h3>Salas</h3>
+    <div>
+      <input id="roomName" placeholder="Nombre sala" />
+      <label><input id="isPrivate" type="checkbox" /> Privada</label>
+      <input id="roomPassword" placeholder="Password (si privada)" />
+      <button id="createRoomBtn">Crear sala</button>
+    </div>
+
+    <div id="roomsList"></div>
+
+    <h3>Historial de la sala seleccionada</h3>
+    <div>
+      <input id="selectedRoomId" placeholder="room id" />
+      <button id="getHistoryBtn">Ver historial (page 1)</button>
+    </div>
+    <div id="history"></div>
+
+    <button id="logoutBtn">Logout</button>
+  </div>
+
+<script>
+const API = 'http://localhost:4000';
+let token = null;
+
+function saveToken(t) {
+  token = t;
+  localStorage.setItem('token', t);
+}
+
+function loadToken() {
+  token = localStorage.getItem('token');
+  if (token) {
+    document.getElementById('loginDiv').classList.add('hidden');
+    document.getElementById('mainDiv').classList.remove('hidden');
+    loadRooms();
+  }
+}
+loadToken();
+
+document.getElementById('registerBtn').onclick = async () => {
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+  const res = await fetch(API + '/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password })
+  });
+  const data = await res.json();
+  document.getElementById('loginMsg').innerText = res.ok ? 'Registered, now login' : (data.error || 'error');
+};
+
+document.getElementById('loginBtn').onclick = async () => {
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+  const res = await fetch(API + '/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password })
+  });
+  const data = await res.json();
+  if (res.ok && data.token) {
+    saveToken(data.token);
+    document.getElementById('loginDiv').classList.add('hidden');
+    document.getElementById('mainDiv').classList.remove('hidden');
+    loadRooms();
+  } else {
+    document.getElementById('loginMsg').innerText = data.error || 'login failed';
+  }
+};
+
+document.getElementById('createRoomBtn').onclick = async () => {
+  const name = document.getElementById('roomName').value;
+  const is_private = document.getElementById('isPrivate').checked;
+  const password = document.getElementById('roomPassword').value;
+  const res = await fetch(API + '/rooms/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({ name, is_private, password })
+  });
+  const data = await res.json();
+  if (res.ok) {
+    alert('Sala creada: ' + data.room.id);
+    loadRooms();
+  } else {
+    alert('Error: ' + (data.error || ''));
+  }
+};
+
+async function loadRooms() {
+  // Lista simple: tomamos las primeras 50 rooms (no hay endpoint listado -> quick homemade)
+  // Si quieres, añadimos endpoint GET /rooms to list rooms. Por ahora: hacemos query SQL desde backend si lo deseas.
+  // Para simplicidad, pedimos al backend a través de un pequeño hack: no existe endpoint, así que omitimos.
+  // Aquí mostraremos cómo pedir la historia si sabemos el ID.
+  document.getElementById('roomsList').innerHTML = 'Crea una sala para empezar (no hay endpoint de listado en esta versión).';
+}
+
+document.getElementById('getHistoryBtn').onclick = async () => {
+  const rid = document.getElementById('selectedRoomId').value;
+  if (!rid) return alert('room id required');
+  const res = await fetch(API + '/rooms/' + rid + '/history?page=1&page_size=20', {
+    headers: { 'Authorization': 'Bearer ' + token }
+  });
+  const data = await res.json();
+  if (!res.ok) return alert(data.error || 'error loading history');
+  const el = document.getElementById('history');
+  el.innerHTML = '<strong>Total:</strong> ' + data.total + '<br/>';
+  data.messages.forEach(m => {
+    el.innerHTML += `<div><small>${m.created_at} - <b>${m.username || m.user_id}</b></small><div>${m.content}</div></div><hr/>`;
+  });
+};
+
+document.getElementById('logoutBtn').onclick = () => {
+  localStorage.removeItem('token');
+  token = null;
+  document.getElementById('mainDiv').classList.add('hidden');
+  document.getElementById('loginDiv').classList.remove('hidden');
+};
+</script>
+</body>
+</html>

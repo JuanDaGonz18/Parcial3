@@ -1,0 +1,33 @@
+﻿version: '3.8'
+services:
+  db:
+    image: postgres:15
+    container_name: parcial3_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: parcial3
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./backend/migrations:/docker-entrypoint-initdb.d:ro
+
+  app:
+    image: node:20
+    container_name: parcial3_app
+    working_dir: /usr/src/app
+    volumes:
+      - ./backend:/usr/src/app
+    command: sh -c "npm install && node index.js"
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/parcial3
+      - JWT_SECRET=supersecreto123
+      - PORT=4000
+    ports:
+      - "4000:4000"
+    depends_on:
+      - db
+
+volumes:
+  db_data:
