@@ -8,6 +8,7 @@
     "test": "jest --runInBand"
   },
   "dependencies": {
+    "@tailwindcss/vite": "^4.1.16",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
@@ -18,7 +19,23 @@
     "pino-pretty": "^11.2.1"
   },
   "devDependencies": {
+    "@tailwindcss/cli": "^4.1.17",
+    "@tailwindcss/vite": "^4.1.16",
+    "autoprefixer": "^10.4.22",
     "jest": "^30.2.0",
-    "supertest": "^7.1.4"
-  }
+    "postcss": "^8.5.6",
+    "supertest": "^7.1.4",
+    "tailwindcss": "^4.1.17"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JuanDaGonz18/Parcial3.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/JuanDaGonz18/Parcial3/issues"
+  },
+  "homepage": "https://github.com/JuanDaGonz18/Parcial3#readme"
 }
