@@ -1,4 +1,4 @@
-﻿version: '3.8'
+﻿version: "3.9"
 
 services:
 
@@ -9,17 +9,38 @@ services:
       - "5173:5173"
     volumes:
       - ./frontend:/app
-      - /app/node_modules   # mantiene node_modules del contenedor
+      - /app/node_modules
     environment:
       - CHOKIDAR_USEPOLLING=true
       - TAILWIND_MODE=watch
     command: ["npm", "run", "dev", "--", "--host"]
     depends_on:
-      - app
+      - backend
+
+  backend:
+    build: ./backend
+    container_name: parcial3_backend
+    working_dir: /usr/src/app
+    depends_on:
+      - db
+      - rabbit
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/parcial3
+      - JWT_SECRET=supersecreto123
+      - RABBIT_URL=amqp://guest:guest@rabbit:5672
+      - PORT=4000
+      - RABBIT_URL=amqp://rabbit
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./backend:/usr/src/app
+      - /usr/src/app/node_modules
+    command: sh -c "npm install && node index.js"
 
   db:
     image: postgres:15
     container_name: parcial3_db
+    restart: always
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -30,21 +51,33 @@ services:
       - db_data:/var/lib/postgresql/data
       - ./backend/migrations:/docker-entrypoint-initdb.d:ro
 
-  app:
+  rabbit:
+    image: rabbitmq:3-management
+    container_name: parcial3_rabbit
+    restart: always
+    ports:
+      - "5672:5672"     # conexión backend
+      - "15672:15672"   # panel web http://localhost:15672
+    volumes:
+      - rabbit_data:/var/lib/rabbitmq
+
+  consumer:
     image: node:20
-    container_name: parcial3_app
+    container_name: parcial3_consumer
     working_dir: /usr/src/app
     volumes:
       - ./backend:/usr/src/app
-    command: sh -c "npm install && node index.js"
-    environment:
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/parcial3
-      - JWT_SECRET=supersecreto123
-      - PORT=4000
-    ports:
-      - "4000:4000"
+    command: sh -c "npm install && node consumer.js"
     depends_on:
+      - rabbit
+      - backend
       - db
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/postgres
+      RABBIT_URL: amqp://rabbit
+
+
 
 volumes:
   db_data:
+  rabbit_data:
