@@ -160,7 +160,7 @@ export function Dashboard() {
 
             <button
               className="mt-4 bg-gray-800 hover:bg-black text-white py-2 rounded-lg transition"
-              onClick={() => alert("Aquí abrimos la sala más adelante")}
+              onClick={() => navigate(`/room/${room.id}`)}
             >
               Entrar
             </button>
