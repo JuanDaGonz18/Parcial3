@@ -1,107 +1,83 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { api } from "../services/api";
 import { io } from "socket.io-client";
 
 export function RoomView() {
-  const { id } = useParams();
+  const { id: roomId } = useParams();
   const navigate = useNavigate();
 
-  const [messages, setMessages] = useState([]);
-  const [msgInput, setMsgInput] = useState("");
+  const [socket, setSocket] = useState(null);
+  const [messages, setMessages] = useState([]);  // mensajes en tiempo real
+  const [text, setText] = useState("");
 
-  const socketRef = useRef(null);
-  const bottomRef = useRef(null);
-
-  // 1. Cargar historial
   useEffect(() => {
-    async function loadHistory() {
-      try {
-        const res = await api.getRoomHistory(id);
-        setMessages(res.messages.reverse()); 
-      } catch (err) {
-        console.error(err);
-      }
-    }
-    loadHistory();
-  }, [id]);
+    const s = io("http://localhost:4000"); // tu backend
+    setSocket(s);
 
-  // 2. Conectar WebSocket + unirse a sala
-  useEffect(() => {
-    socketRef.current = io("http://localhost:4000");  // tu backend
+    // unirse
+    s.emit("join_room", roomId);
 
-    socketRef.current.emit("join_room", id);
+    // historial inicial temporal
+    s.on("room_history", (msgs) => {
+      setMessages(msgs);
+    });
 
-    socketRef.current.on("receive_message", (data) => {
-      setMessages((prev) => [...prev, data]);
+    // cuando llegue mensaje nuevo
+    s.on("new_message", (msg) => {
+      setMessages((prev) => [...prev, msg]);
     });
 
     return () => {
-      socketRef.current.disconnect();
+      s.disconnect();
     };
-  }, [id]);
+  }, [roomId]);
 
-  // Scroll al final
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  function sendMessage(e) {
+    e.preventDefault();
+    if (!text.trim()) return;
 
-  function sendMessage() {
-    if (!msgInput.trim()) return;
+    socket.emit("send_message", {
+      roomId,
+      content: text,
+      user: "Usuario", // luego lo cambias por el username real
+    });
 
-    const payload = {
-      roomId: id,
-      content: msgInput,
-      username: localStorage.getItem("username") || "Usuario"
-    };
-
-    socketRef.current.emit("send_message", payload);
-    setMsgInput("");
+    setText("");
   }
 
   return (
-    <div className="max-w-3xl mx-auto mt-10 px-6">
-      <button
-        className="mb-4 text-blue-600 underline"
-        onClick={() => navigate("/dashboard")}
-      >
-        ← Volver al Dashboard
-      </button>
-
-      <div className="bg-white shadow-md rounded-xl p-6 h-[70vh] flex flex-col">
-
-        <h2 className="text-2xl font-bold mb-4">Sala #{id}</h2>
-
-        {/* Mensajes */}
-        <div className="flex-1 overflow-y-auto space-y-4">
-          {messages.map((m, i) => (
-            <div key={i} className="p-3 bg-gray-100 rounded-lg">
-              <small className="text-gray-500">
-                <b>{m.username}</b> – {m.created_at || ""}
-              </small>
-              <p className="text-gray-800">{m.content}</p>
-            </div>
-          ))}
-          <div ref={bottomRef}></div>
-        </div>
-
-        {/* Caja de texto */}
-        <div className="mt-4 flex gap-2">
-          <input
-            className="flex-1 px-4 py-3 border rounded-lg"
-            placeholder="Escribe un mensaje…"
-            value={msgInput}
-            onChange={(e) => setMsgInput(e.target.value)}
-          />
-          <button
-            className="bg-blue-600 text-white px-6 rounded-lg"
-            onClick={sendMessage}
-          >
-            Enviar
-          </button>
-        </div>
-
+    <div className="max-w-3xl mx-auto mt-10 px-4">
+      <div className="flex justify-between items-center mb-5">
+        <h1 className="text-2xl font-bold">Sala: {roomId}</h1>
+        <button
+          onClick={() => navigate("/")}
+          className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg"
+        >
+          Salir
+        </button>
       </div>
+
+      <div className="bg-white shadow rounded-xl p-5 h-[60vh] overflow-y-auto border">
+        {messages.map((m) => (
+          <div key={m.id} className="mb-3 p-3 border rounded bg-gray-50">
+            <p className="text-xs text-gray-500">{m.created_at}</p>
+            <p className="font-semibold">{m.user}</p>
+            <p className="text-gray-700">{m.content}</p>
+          </div>
+        ))}
+      </div>
+
+      <form onSubmit={sendMessage} className="mt-4 flex gap-3">
+        <input
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          className="flex-1 px-4 py-3 border rounded-lg"
+          placeholder="Escribe un mensaje…"
+        />
+        <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg">
+          Enviar
+        </button>
+      </form>
     </div>
   );
 }

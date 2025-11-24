@@ -27,7 +27,7 @@ return (
 <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
 <Route path="*" element={<Navigate to="/" replace />} />
 
-  <Route path="/dashboard" element={<Dashboard />} />
+  <Route path="/" element={<Dashboard />} />
   <Route path="/room/:id" element={<RoomView />} />
 
 </Routes>
