@@ -1,5 +1,22 @@
 ﻿version: '3.8'
+
 services:
+
+  frontend:
+    build: ./frontend
+    container_name: parcial3_front
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules   # mantiene node_modules del contenedor
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - TAILWIND_MODE=watch
+    command: ["npm", "run", "dev", "--", "--host"]
+    depends_on:
+      - app
+
   db:
     image: postgres:15
     container_name: parcial3_db
