@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { api } from "../services/api";
+import { useNavigate } from "react-router-dom";
 
 export function Dashboard() {
+
+  const navigate = useNavigate();
+
   const [roomName, setRoomName] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
   const [roomPassword, setRoomPassword] = useState("");
@@ -160,7 +164,7 @@ export function Dashboard() {
 
             <button
               className="mt-4 bg-gray-800 hover:bg-black text-white py-2 rounded-lg transition"
-              onClick={() => alert("Aquí abrimos la sala más adelante")}
+              onClick={() => navigate(`/room/${room.id}`)}
             >
               Entrar
             </button>

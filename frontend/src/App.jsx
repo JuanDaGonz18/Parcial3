@@ -26,6 +26,10 @@ return (
 <Route path="/register" element={<Register />} />
 <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
 <Route path="*" element={<Navigate to="/" replace />} />
+
+  <Route path="/" element={<Dashboard />} />
+  <Route path="/room/:id" element={<RoomView />} />
+
 </Routes>
 </AuthProvider>
 )
