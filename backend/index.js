@@ -30,6 +30,9 @@ const cors = require('cors');
 const http = require("http");
 const { Server } = require("socket.io");
 
+const db = require('./db');
+
+
 const logger = require('./logger');
 const authRoutes = require('./routes/auth');
 const roomsRoutes = require('./routes/rooms');
@@ -57,10 +60,22 @@ const roomMessages = {};
 io.on("connection", (socket) => {
   console.log("Cliente conectado:", socket.id);
 
-  socket.on("join_room", (roomId) => {
+  socket.on("join_room", async (roomId) => {
     socket.join(roomId);
-    socket.emit("room_history", roomMessages[roomId] || []);
+
+    const result = await db.query(
+      `SELECT m.id, m.content, m.created_at,
+              u.username AS user
+      FROM messages m
+      JOIN users u ON u.id = m.user_id
+      WHERE m.room_id = $1
+      ORDER BY m.created_at ASC`,
+      [roomId]
+    );
+
+    socket.emit("room_history", result.rows);
   });
+
 
   socket.on("send_message", async ({ roomId, content, user }) => {
     const msg = {

@@ -1,26 +1,33 @@
 const amqp = require("amqplib");
-const db = require("./db");
+const db = require("./db"); // tu pool de postgres
 
 async function startConsumer() {
-  const connection = await amqp.connect("amqp://rabbit");
+  const connection = await amqp.connect(process.env.RABBIT_URL || "amqp://rabbit");
   const channel = await connection.createChannel();
-  await channel.assertQueue("messages");
 
-  console.log("👂 Listening for messages...");
+  await channel.assertQueue("messages", { durable: true });
+
+  console.log("📥 Consumer está escuchando mensajes...");
 
   channel.consume("messages", async (msg) => {
+    if (!msg) return;
+
     const data = JSON.parse(msg.content.toString());
 
-    // persist message
-    await db.query(
-      `INSERT INTO messages (room_id, user_id, content, created_at)
-       VALUES ($1, $2, $3, NOW())`,
-      [data.roomId, data.userId, data.text]
-    );
+    try {
+      await db.query(
+        `INSERT INTO messages (room_id, user_id, content)
+         VALUES ($1, $2, $3)`,
+        [data.roomId, data.userId, data.content]
+      );
 
-    console.log(" saved message:", data);
+      channel.ack(msg);
+      console.log("💾 Mensaje guardado:", data);
 
-    channel.ack(msg);
+    } catch (err) {
+      console.error("❌ Error guardando mensaje:", err);
+      channel.nack(msg, false, true);
+    }
   });
 }
 
