@@ -102,6 +102,7 @@ Servicios levantados:
   ---------- ----------------------------------------------
   **db**     PostgreSQL con migraciones ejecutadas
   **app**    API REST disponible en http://localhost:4000
+  **frontend** Proyecto hecho en Vite disponible en http://localhost:5173
 
 Cuando aparezca:
 
@@ -213,11 +214,11 @@ Se abre directamente dando doble clic.
 
 ------------------------------------------------------------------------
 
-## Integración con fases futuras
+## Integraciones
 
 ### Backend en tiempo real (WebSockets + Broker)
 
-Se integrará sobre:
+Se integró sobre:
 
 -   Autenticación ya lista\
 -   Salas y membresías funcionales\
@@ -226,7 +227,7 @@ Se integrará sobre:
 
 ### Frontend definitivo
 
-Utilizará:
+Utilizó:
 
 -   Login real\
 -   Listado de salas\
