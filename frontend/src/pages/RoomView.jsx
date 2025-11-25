@@ -43,7 +43,7 @@ export function RoomView() {
     socket.emit("send_message", {
       roomId,
       content: text,
-      user: user.username,   // 🔥 ahora sí existe SIEMPRE
+      user: user.username, 
     });
 
     setText("");
