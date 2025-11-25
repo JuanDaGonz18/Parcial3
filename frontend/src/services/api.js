@@ -37,12 +37,20 @@ createRoom: (payload) => request("/rooms/create", { method: "POST", body: payloa
 getHistory: (id) => request(`/rooms/${id}/history?page=1&page_size=20`),
 
 getRooms: () => request("/rooms"),
+isMember: (id) => request(`/rooms/${id}/is_member`),
 joinRoom: (room_id, password) =>
-    request("/rooms/join", "POST", { room_id, password }),
+    request(`/rooms/join`, {
+      method: "POST",
+      body: { room_id, password }
+    }),
 
+deleteRoom: (roomId) =>
+    request(`/rooms/del/${roomId}`, { method: "DELETE" }),
 getRoomHistory: (id) =>
     request(`/rooms/${id}/history?page=1&page_size=50`),
 
+leaveRoom: (roomId) =>
+    request(`/rooms/leave/${roomId}`, { method: "POST" }),
 sendMessage: (id, content) =>
     request(`/rooms/${id}/messages`, "POST", { content }),
 };

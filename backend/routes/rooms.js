@@ -41,6 +41,70 @@ router.post('/create', authMiddleware, async (req, res) => {
   }
 });
 
+router.delete('/del/:id', authMiddleware, async (req, res) => {
+  try {
+    const roomId = req.params.id;
+
+    // Verificar que la sala existe
+    const roomRes = await db.query(
+      'SELECT id, created_by FROM rooms WHERE id = $1',
+      [roomId]
+    );
+
+    if (roomRes.rowCount === 0) {
+      return res.status(404).json({ error: 'room not found' });
+    }
+
+    const room = roomRes.rows[0];
+
+    // Verificar que el usuario que elimina es el creador
+    if (room.created_by !== req.user.id) {
+      return res.status(403).json({ error: 'only the creator can delete this room' });
+    }
+
+    // Borrar primero los mensajes y miembros (FK constraints)
+    await db.query('DELETE FROM messages WHERE room_id = $1', [roomId]);
+    await db.query('DELETE FROM room_members WHERE room_id = $1', [roomId]);
+
+    // Borrar la sala
+    await db.query('DELETE FROM rooms WHERE id = $1', [roomId]);
+
+    res.json({ message: 'room deleted successfully', room_id: roomId });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'internal error' });
+  }
+});
+
+router.post('/leave/:id', authMiddleware, async (req, res) => {
+  try {
+    const roomId = req.params.id;
+
+    // Verificar que el usuario sea miembro
+    const exists = await db.query(
+      'SELECT 1 FROM room_members WHERE room_id = $1 AND user_id = $2',
+      [roomId, req.user.id]
+    );
+
+    if (exists.rowCount === 0) {
+      return res.status(400).json({ error: 'you are not a member of this room' });
+    }
+
+    // Borrar miembro
+    await db.query(
+      'DELETE FROM room_members WHERE room_id = $1 AND user_id = $2',
+      [roomId, req.user.id]
+    );
+
+    return res.json({ message: 'left room successfully' });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'internal error' });
+  }
+});
+
+
 router.post('/join', authMiddleware, async (req, res) => {
   try {
     const { room_id, password } = req.body;
@@ -84,6 +148,23 @@ router.post('/join', authMiddleware, async (req, res) => {
   } catch (err) {
     logger.error(err);
     res.status(500).json({ error: 'internal error' });
+  }
+});
+
+router.get('/:id/is_member', authMiddleware, async (req, res) => {
+  try {
+    const roomId = req.params.id;
+
+    const memberRes = await db.query(
+      'SELECT 1 FROM room_members WHERE room_id = $1 AND user_id = $2',
+      [roomId, req.user.id]
+    );
+
+    res.json({ is_member: memberRes.rowCount > 0 });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "internal error" });
   }
 });
 

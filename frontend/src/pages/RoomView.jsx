@@ -1,17 +1,21 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
+import { useAuth } from "../hooks/useAuth";
+import { api } from "../services/api";
 
 export function RoomView() {
   const { id: roomId } = useParams();
   const navigate = useNavigate();
 
+  const { user } = useAuth();
+
   const [socket, setSocket] = useState(null);
-  const [messages, setMessages] = useState([]);  // mensajes en tiempo real
+  const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
 
   useEffect(() => {
-    const s = io("http://localhost:4000"); // tu backend
+    const s = io("http://localhost:4000");
     setSocket(s);
 
     // unirse
@@ -39,10 +43,20 @@ export function RoomView() {
     socket.emit("send_message", {
       roomId,
       content: text,
-      user: "Usuario", // luego lo cambias por el username real
+      user: user.username,   // 🔥 ahora sí existe SIEMPRE
     });
 
     setText("");
+  }
+
+  async function handleLeaveRoom() {
+    try {
+      await api.leaveRoom(roomId);
+      navigate("/dashboard");
+    } catch (err) {
+      console.error(err);
+      alert("Error al salir de la sala");
+    }
   }
 
   return (
@@ -50,7 +64,7 @@ export function RoomView() {
       <div className="flex justify-between items-center mb-5">
         <h1 className="text-2xl font-bold">Sala: {roomId}</h1>
         <button
-          onClick={() => navigate("/")}
+          onClick={handleLeaveRoom}
           className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg"
         >
           Salir
