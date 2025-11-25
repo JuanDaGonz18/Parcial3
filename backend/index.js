@@ -1,5 +1,6 @@
 ﻿require('dotenv').config();
 const amqp = require("amqplib");
+const { nanoid } = require("nanoid");
 
 let channel;
 
@@ -47,6 +48,10 @@ app.use('/rooms', roomsRoutes);
 
 const server = http.createServer(app);
 
+const debugRoutes = require('./routes/debug');
+app.use('/debug', debugRoutes);
+
+
 const io = new Server(server, {
   cors: {
     origin: "*",
@@ -77,35 +82,37 @@ io.on("connection", (socket) => {
   });
 
 
-  socket.on("send_message", async ({ roomId, content, user }) => {
+  socket.on("send_message", async ({ roomId, content, user, userId }) => {
+    if (!channel) {
+      console.warn("⚠ No hay conexión con RabbitMQ todavía");
+      return;
+    }
+
     const msg = {
-      id: Date.now(),
+      id: nanoid(),
       roomId,
       content,
       user,
+      userId,
       created_at: new Date().toISOString()
     };
 
-    // guardar historial en memoria
-    if (!roomMessages[roomId]) roomMessages[roomId] = [];
-    roomMessages[roomId].push(msg);
-
     // publicar al broker
-    if (channel) {
-      channel.sendToQueue(
-        "messages",
-        Buffer.from(JSON.stringify(msg)),
-        { persistent: true } // persistencia real
-      );
-
-      console.log("enviado a RabbitMQ:", msg);
-    } else {
-      console.warn("⚠ No hay conexión con RabbitMQ todavía");
-    }
+    channel.sendToQueue(
+      "messages",
+      Buffer.from(JSON.stringify(msg)),
+      { persistent: true }
+    );
+    console.log("➡ Mensaje enviado a RabbitMQ:", msg);
 
     // enviar en tiempo real
     io.to(roomId).emit("new_message", msg);
+
+    // guardar historial en memoria (opcional, solo para quick access)
+    if (!roomMessages[roomId]) roomMessages[roomId] = [];
+    roomMessages[roomId].push(msg);
   });
+
 
   socket.on("disconnect", () => {
     console.log("Cliente desconectado");

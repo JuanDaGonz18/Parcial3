@@ -2,10 +2,21 @@ const amqp = require("amqplib");
 const db = require("./db"); // tu pool de postgres
 
 async function startConsumer() {
-  const connection = await amqp.connect(process.env.RABBIT_URL || "amqp://rabbit");
-  const channel = await connection.createChannel();
+  let channel;
 
-  await channel.assertQueue("messages", { durable: true });
+  // Retry loop para conectarse a RabbitMQ
+  while (true) {
+    try {
+      const connection = await amqp.connect(process.env.RABBIT_URL || "amqp://guest:guest@rabbit:5672");
+      channel = await connection.createChannel();
+      await channel.assertQueue("messages", { durable: true });
+      console.log("📌 Consumer conectado a RabbitMQ");
+      break; // conexión exitosa, salir del loop
+    } catch (err) {
+      console.log("❌ RabbitMQ no disponible, reintentando en 5s...");
+      await new Promise(r => setTimeout(r, 5000));
+    }
+  }
 
   console.log("📥 Consumer está escuchando mensajes...");
 

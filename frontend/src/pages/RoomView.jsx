@@ -43,7 +43,8 @@ export function RoomView() {
     socket.emit("send_message", {
       roomId,
       content: text,
-      user: user.username, 
+      user: user.username,
+      userId: user.id
     });
 
     setText("");

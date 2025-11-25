@@ -29,7 +29,6 @@ services:
       - JWT_SECRET=supersecreto123
       - RABBIT_URL=amqp://guest:guest@rabbit:5672
       - PORT=4000
-      - RABBIT_URL=amqp://rabbit
     ports:
       - "4000:4000"
     volumes:
@@ -73,8 +72,8 @@ services:
       - backend
       - db
     environment:
-      DATABASE_URL: postgres://postgres:postgres@db:5432/postgres
-      RABBIT_URL: amqp://rabbit
+      DATABASE_URL: postgres://postgres:postgres@db:5432/parcial3
+      RABBIT_URL: amqp://guest:guest@rabbit:5672
 
 
 
