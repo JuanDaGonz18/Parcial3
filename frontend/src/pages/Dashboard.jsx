@@ -268,13 +268,7 @@ export function Dashboard() {
                   Entrar
                 </button>
 
-                {/* DELETE ROOM DEV BUTTON */}
-                <button
-                  onClick={() => handleDelete(room.id)}
-                  className="px-3 bg-red-500 text-white rounded hover:bg-red-600"
-                >
-                  X
-                </button>
+
               </div>
             </div>
           ))}
